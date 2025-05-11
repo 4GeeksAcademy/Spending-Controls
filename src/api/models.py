@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Integer, DateTime, ForeignKey, Enum
+from sqlalchemy import String, Boolean, Integer, DateTime, ForeignKey, Enum, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import List
@@ -21,17 +21,18 @@ class Employee(db.Model):
     name: Mapped[str] = mapped_column(String(250), nullable=False)
     last_name: Mapped[str] =mapped_column(String(250), nullable=False)
     email: Mapped[str]= mapped_column(String(120), unique=True, nullable=False)
-    supervisor: Mapped[bool]=mapped_column(String(250), nullable=False)
+    supervisor: Mapped[bool]=mapped_column(Boolean(), nullable=False) #Cambiado a boolean
     departament_id: Mapped[int] = mapped_column(ForeignKey('departments.id'), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
 
-    # departamentos: Mapped['Departamento'] = relationship(
-    #     back_populates="empleado"
-    # )
+    department: Mapped['Department'] = relationship(
+       back_populates="employees"
+     )
 
-    # presupuestos: Mapped[List['Presupuesto']] = relationship(
-    #     back_populates="empleado"
-    # )
+    budgets: Mapped[List['Budget']] = relationship(
+         back_populates="employee"
+     )
+
 
 
 
@@ -41,11 +42,12 @@ class Department(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(250), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
-
-    # presupuestos: Mapped['Presupuesto'] = relationship(
-    #     back_populates="departamento"
-    # )
+    budgets: Mapped[List['Budget']] = relationship(
+         back_populates="department"
+     )
+    employees: Mapped[List['Employee']] = relationship(
+         back_populates="department"
+     )
 
 
 
@@ -56,14 +58,14 @@ class Bill(db.Model):
     trip_description: Mapped[str] = mapped_column(String(250), nullable=False)
     trip_address: Mapped[str] =mapped_column(String(250), nullable=False)
     state: Mapped[state_type]= mapped_column(Enum(state_type))
-    amount: Mapped[str]=mapped_column(String(250), nullable=False)
+    amount: Mapped[float]=mapped_column(Numeric(10,2), nullable=False) #Por usar propiedad "Float" para manejar numeros y no texto
     evaluator_id: Mapped[int]= mapped_column(ForeignKey('employees.id'), nullable=False)
-    date_approved: Mapped[datetime] = mapped_column(Boolean(), nullable=False)
+    date_approved: Mapped[datetime] = mapped_column(DateTime, nullable=True)#Cambiado a datetime 
     budget_id: Mapped[int]= mapped_column(ForeignKey('budgets.id'), nullable=False)
 
-    # presupuestos: Mapped['Presupuesto'] = relationship(
-    #     back_populates="Factura"
-    # )
+    budget: Mapped['Budget'] = relationship(
+         back_populates="bills"
+     )
 
 
 class Budget(db.Model):
@@ -73,3 +75,6 @@ class Budget(db.Model):
     budget_description: Mapped[str] = mapped_column(String(250), nullable=False)
     employee_id: Mapped[int]= mapped_column(ForeignKey('employees.id'), nullable=False)
     department_id: Mapped[int]= mapped_column(ForeignKey('departments.id'), nullable=False)
+    department: Mapped["Department"]=relationship(back_populates="budgets")
+    bills: Mapped[List["Bill"]]=relationship(back_populates="budget")
+    employee: Mapped['Employee'] = relationship(back_populates="budgets")
