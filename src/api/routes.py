@@ -6,6 +6,7 @@ from api.models import db, Employee, Bill, Department, Budget
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt, get_jwt_identity
+import re
 
 api = Blueprint('api', __name__)
 
@@ -31,19 +32,28 @@ def login_user():
         return jsonify({"msg": "fields cannot be empty"}), 400
 
     email = body['email']
+
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+    if re.match(pattern, email) is None:
+        return jsonify({"msg": "The email format is not valid"}), 400
+
+    password = body["password"]
+
+    if len(password) < 8:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
     user = Employee.query.filter_by(email=email).first()
 
     if user is None:
-        return jsonify({"msg": "User not found"}), 404
-
-    password = body["password"]
+        return jsonify({"msg": "Invalid credentials"}), 401
 
     # password_hashed = bcrypt.check_password_hash(user.password,password)
     # if not password_hashed:
     #     return jsonify({"msg":"Incorrect data"}),404
 
     if user.password != password:
-        return jsonify({"msg": "Incorrect data"}), 404
+        return jsonify({"msg": "Invalid credentials"}), 401
 
     token = create_access_token(identity=str(user.id))
     return jsonify({"token": token}), 201
