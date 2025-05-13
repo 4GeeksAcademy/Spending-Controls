@@ -7,6 +7,7 @@ from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt, get_jwt_identity
 import re
+import cloudinary.uploader
 
 api = Blueprint('api', __name__)
 
@@ -68,3 +69,20 @@ def refresh():
     user = get_jwt_identity()
     new_access_token = create_access_token(identity=user)
     return jsonify({"token": new_access_token})
+
+
+@api.route("/upload", methods=["POST"])
+def upload():
+    if "bill" not in request.files:
+        return jsonify({"msg": "the image has not been sent correctly"}), 400
+
+    image = request.files["bill"]
+
+    try:
+        upload_result = cloudinary.uploader.upload(image, folder="bills")
+
+        return jsonify({"url": upload_result["secure_url"], "public_id": upload_result["public_id"]}), 200
+
+    except Exception as e:
+
+        return jsonify({"error": str(e)}), 500

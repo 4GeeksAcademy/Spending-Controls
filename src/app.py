@@ -12,6 +12,7 @@ from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
+import cloudinary
 
 # from models import Person
 
@@ -52,6 +53,11 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=10)
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
 
 jwt = JWTManager(app)
+
+# Cloudinary config
+
+cloudinary.config(cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+                  api_key=os.getenv("CLOUDINARY_API_KEY"), api_secret=os.getenv("CLOUDINARY_API_SECRET"))
 
 
 @app.errorhandler(APIException)
