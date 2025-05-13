@@ -21,9 +21,10 @@ class Employee(db.Model):
     name: Mapped[str] = mapped_column(String(250), nullable=False)
     last_name: Mapped[str] =mapped_column(String(250), nullable=False)
     email: Mapped[str]= mapped_column(String(120), unique=True, nullable=False)
-    supervisor: Mapped[bool]=mapped_column(Boolean(), nullable=False) #Cambiado a boolean
-    departament_id: Mapped[int] = mapped_column(ForeignKey('departments.id'), nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    password: Mapped[str]= mapped_column(String(120), nullable=False)
+    is_supervisor: Mapped[bool]=mapped_column(Boolean(), nullable=False, default=False) #Cambiado a boolean
+    departament_id: Mapped[int] = mapped_column(ForeignKey('departments.id'), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False, default=True)
 
     department: Mapped['Department'] = relationship(
        back_populates="employees"
@@ -33,7 +34,16 @@ class Employee(db.Model):
          back_populates="employee"
      )
 
-
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "is_supervisor": self.is_supervisor,
+            "is_active": self.is_active
+            #password not included for security reasons
+        }
 
 
 
