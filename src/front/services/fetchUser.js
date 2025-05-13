@@ -51,3 +51,26 @@ export const fetchLogin = async (email, password) => {
     console.error(error);
   }
 };
+
+export const fetchImageBill = async (image) => {
+  try {
+    const formData = new FormData();
+    
+    formData.append("bill", image);
+
+    if (!formData.has("bill")) {
+      throw new Error("The image has not been loaded correctly");
+    }
+    const response = await fetch(`${backendUrl}api/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(`Error fetching data ${response.status}`);
+    }
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+};
