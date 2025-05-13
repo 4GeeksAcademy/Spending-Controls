@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, Employee, Bill, Department, Budget
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt, get_jwt_identity
 import re
 
 api = Blueprint('api', __name__)
@@ -55,5 +55,16 @@ def login_user():
     if user.password != password:
         return jsonify({"msg": "Invalid credentials"}), 401
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({"token": token}), 201
+    access_token = create_access_token(identity=str(user.id))
+
+    refresh_token = create_refresh_token(identity=str(user.id))
+
+    return jsonify({"token": access_token, "refresh_token": refresh_token}), 201
+
+
+@api.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    user = get_jwt_identity()
+    new_access_token = create_access_token(identity=user)
+    return jsonify({"token": new_access_token})

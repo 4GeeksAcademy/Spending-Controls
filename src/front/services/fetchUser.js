@@ -29,14 +29,24 @@ export const fetchLogin = async (email, password) => {
     if (!response.ok) {
       throw new Error(`Error fetching data code:${response.status}`);
     }
-    if (!response.token) {
+
+    const data = await response.json();
+
+    if (!data.token) {
       throw new Error("The token has not been sent correctly to the user");
     }
-    const data = await response.json();
+    if (!data.refresh_token) {
+      throw new Error(
+        "The refresh token has not been sent correctly to the user"
+      );
+    }
 
     const token = JSON.stringify(data.token);
 
+    const refreshToken = JSON.stringify(data.refresh_token);
+
     localStorage.setItem("token", token);
+    localStorage.setItem("refreshToken", refreshToken);
   } catch (error) {
     console.error(error);
   }
