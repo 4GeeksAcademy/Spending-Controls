@@ -10,6 +10,9 @@ from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
+import cloudinary
 
 # from models import Person
 
@@ -42,6 +45,20 @@ app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object
 
+# JWT config
+app.config["JWT_SECRET_KEY"] = os.getenv("FLASK_APP_KEY")
+
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=10)
+
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=1)
+
+jwt = JWTManager(app)
+
+# Cloudinary config
+
+cloudinary.config(cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+                  api_key=os.getenv("CLOUDINARY_API_KEY"), api_secret=os.getenv("CLOUDINARY_API_SECRET"))
+
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
@@ -57,6 +74,8 @@ def sitemap():
     return send_from_directory(static_file_dir, 'index.html')
 
 # any other endpoint will try to serve it like a static file
+
+
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
     if not os.path.isfile(os.path.join(static_file_dir, path)):

@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import db, Employee, Bill, Department, Budget
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt, get_jwt_identity
+import re
+import cloudinary.uploader
 
 api = Blueprint('api', __name__)
 
@@ -20,3 +23,66 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+
+@api.route('/login', methods=['POST'])
+def login_user():
+    body = request.get_json()
+
+    if body['email'].strip() == "" or body["password"].strip() == "":
+        return jsonify({"msg": "fields cannot be empty"}), 400
+
+    email = body['email']
+
+    pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+
+    if re.match(pattern, email) is None:
+        return jsonify({"msg": "The email format is not valid"}), 400
+
+    password = body["password"]
+
+    if len(password) < 8:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
+    user = Employee.query.filter_by(email=email).first()
+
+    if user is None:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
+    # password_hashed = bcrypt.check_password_hash(user.password,password)
+    # if not password_hashed:
+    #     return jsonify({"msg":"Incorrect data"}),404
+
+    if user.password != password:
+        return jsonify({"msg": "Invalid credentials"}), 401
+
+    access_token = create_access_token(identity=str(user.id))
+
+    refresh_token = create_refresh_token(identity=str(user.id))
+
+    return jsonify({"token": access_token, "refresh_token": refresh_token}), 201
+
+
+@api.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    user = get_jwt_identity()
+    new_access_token = create_access_token(identity=user)
+    return jsonify({"token": new_access_token})
+
+
+@api.route("/upload", methods=["POST"])
+def upload():
+    if "bill" not in request.files:
+        return jsonify({"msg": "the image has not been sent correctly"}), 400
+
+    image = request.files["bill"]
+
+    try:
+        upload_result = cloudinary.uploader.upload(image, folder="bills")
+
+        return jsonify({"url": upload_result["secure_url"], "public_id": upload_result["public_id"]}), 200
+
+    except Exception as e:
+
+        return jsonify({"error": str(e)}), 500
